@@ -2,14 +2,14 @@
 
 all: memtest
 
-ackerman.o: ackerman.c 
-	g++ -c -g ackerman.c
+ackerman.o: ackerman.cpp 
+	g++ -c -g ackerman.cpp
 
-my_allocator.o : my_allocator.c
-	g++ -c -g my_allocator.c
+my_allocator.o : my_allocator.cpp
+	g++ -c -g my_allocator.cpp
 
-memtest.o : memtest.c
-	g++ -c -g memtest.c
+memtest.o : memtest.cpp
+	g++ -c -g memtest.cpp
 
 memtest: memtest.o ackerman.o my_allocator.o
 	g++ -o memtest memtest.o ackerman.o my_allocator.o
