@@ -14,4 +14,3 @@ memtest.o : memtest.cpp
 memtest: memtest.o ackerman.o my_allocator.o
 	g++ -o memtest memtest.o ackerman.o my_allocator.o
 
-//test
