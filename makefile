@@ -2,7 +2,7 @@
 
 all: memtest
 
-ackerman.o: ackerman.cpp 
+ackerman.o: ackerman.cpp
 	g++ -c -g ackerman.cpp
 
 my_allocator.o : my_allocator.cpp
@@ -13,4 +13,9 @@ memtest.o : memtest.cpp
 
 memtest: memtest.o ackerman.o my_allocator.o
 	g++ -o memtest memtest.o ackerman.o my_allocator.o
+	
+clean:
+	rm *.o memtest
+run:
+	./memtest
 
