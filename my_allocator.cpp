@@ -26,6 +26,7 @@
 #include "my_allocator.h"
 #include <math.h>
 #include <vector>
+#include <iostream>
 
 /*--------------------------------------------------------------------------*/
 /* DATA STRUCTURES */ 
@@ -38,8 +39,8 @@
 /*--------------------------------------------------------------------------*/
 
 struct header{
+	header* buddy;
 	int size;
-	header* next;
 	bool free;
 };
 
@@ -67,24 +68,38 @@ memory made available to the allocator. If an error occurred, it returns 0. */
 	int block = _basic_block_size;			//memory allocated
 	int freesize = 1;						//free list vector size
 	
-	while (block < _length)
+	while (block < _length + sizeof(free_list))
 	{
 		block *= 2;
 		++freesize;
 	}
 	
-	memory = (header*)malloc(block);
-	free_list.resize(freesize + 1);
-	
-	return block;
+	if (block > 4294967295)	{
+		return 0;
+	}
+	else	{
+		header mem;
+		mem.size = 64;
+		mem.buddy = NULL;
+		
+		//use first() and last() to access free_list elements
+		free_list.push_back(mem);
+		memory = (header*)malloc(block);
+		free_list.resize(freesize + 1);
+		return block;
+	}
 }
-
 
 extern Addr my_malloc(unsigned int _length) {
   /* This preliminary implementation simply hands the call over the 
      the C standard library! 
      Of course this needs to be replaced by your implementation.
   */
+  for (int i = 0; i < free_list.size(); i++)
+  {
+	  
+  }
+  
   return malloc((size_t)_length);
 }
 
@@ -94,3 +109,7 @@ extern int my_free(Addr _a) {
   return 0;
 }
 
+int main()
+{
+
+}
