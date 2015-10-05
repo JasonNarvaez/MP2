@@ -24,6 +24,8 @@
 
 #include<stdlib.h>
 #include "my_allocator.h"
+#include <math.h>
+#include <vector>
 
 /*--------------------------------------------------------------------------*/
 /* DATA STRUCTURES */ 
@@ -35,7 +37,14 @@
 /* CONSTANTS */
 /*--------------------------------------------------------------------------*/
 
-    /* -- (none) -- */
+struct header{
+	int size;
+	header* next;
+	bool free;
+};
+
+vector<header>free_list;
+header* memory;
 
 /*--------------------------------------------------------------------------*/
 /* FORWARDS */
@@ -48,6 +57,27 @@
 /*--------------------------------------------------------------------------*/
 
 /* Don't forget to implement "init_allocator" and "release_allocator"! */
+
+unsigned int init_allocator(unsigned int _basic_block_size, unsigned int _length)
+/* This function initializes the memory allocator and makes a portion of
+'_length' bytes available. The allocator uses a '_basic_block_size' as
+its minimal unit of allocation. The function returns the amount of
+memory made available to the allocator. If an error occurred, it returns 0. */
+{
+	int block = _basic_block_size;			//memory allocated
+	int freesize = 1;						//free list vector size
+	
+	while (block < _length)
+	{
+		block *= 2;
+		++freesize;
+	}
+	
+	memory = (header*)malloc(block);
+	free_list.resize(freesize + 1);
+	
+	return block;
+}
 
 
 extern Addr my_malloc(unsigned int _length) {
