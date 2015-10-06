@@ -27,6 +27,7 @@
 #include <math.h>
 #include <vector>
 #include <iostream>
+#include <bitset>
 
 /*--------------------------------------------------------------------------*/
 /* DATA STRUCTURES */ 
@@ -45,7 +46,9 @@ struct header{
 };
 
 vector<header>free_list;
-header* memory;
+header* memory;	//Entire memory allocated
+int memspace;	//amount of space available
+int basic;		//basic block size global variable
 
 /*--------------------------------------------------------------------------*/
 /* FORWARDS */
@@ -58,6 +61,25 @@ header* memory;
 /*--------------------------------------------------------------------------*/
 
 /* Don't forget to implement "init_allocator" and "release_allocator"! */
+
+unsigned int bitFlip(unsigned int input)
+{
+	//check for power
+	unsigned int check = 1;
+	int pwr;
+	while (check != input)
+	{
+		check *= 2;
+		pwr++;
+	}
+	pwr--;	//s-1
+	//cout << 
+    unsigned int output = input;
+    output |= (1u << pwr);
+	//http://stackoverflow.com/questions/6916974/change-a-bit-of-an-integer
+	
+    return output;
+}
 
 unsigned int init_allocator(unsigned int _basic_block_size, unsigned int _length)
 /* This function initializes the memory allocator and makes a portion of
@@ -79,26 +101,40 @@ memory made available to the allocator. If an error occurred, it returns 0. */
 	}
 	else	{
 		header mem;
-		mem.size = 64;
+		mem.size = block;
 		mem.buddy = NULL;
 		
 		//use first() and last() to access free_list elements
 		free_list.push_back(mem);
 		memory = (header*)malloc(block);
 		free_list.resize(freesize + 1);
+		basic = _basic_block_size;
+		memspace = block;
 		return block;
 	}
 }
 
 extern Addr my_malloc(unsigned int _length) {
-  /* This preliminary implementation simply hands the call over the 
-     the C standard library! 
-     Of course this needs to be replaced by your implementation.
-  */
-  for (int i = 0; i < free_list.size(); i++)
-  {
-	  
-  }
+/*	This preliminary implementation simply hands the call over the 
+    the C standard library! 
+    Of course this needs to be replaced by your implementation.
+	Allocate _length number of bytes of free memory and returns the 
+	address of the allocated portion. Returns 0 when out of memory. */  
+	int tempsize = memspace;
+	int power = free_list.size();
+	
+	while (_length < tempsize)
+	{
+		tempsize /= 2;
+		power--;
+	}
+	power++;	//least memory needed for _length
+	
+	//initialize block
+	for (int i = 0; i < free_list.size(); i++)
+	{
+		//split the blocks
+	}
   
   return malloc((size_t)_length);
 }
@@ -111,5 +147,11 @@ extern int my_free(Addr _a) {
 
 int main()
 {
-
+	int a = 127;
+	bitset<8> x(a);
+	cout << x << endl;
+	
+	x |= (1u << 3);
+	cout << x << endl;
+	return 0;
 }
