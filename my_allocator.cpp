@@ -72,13 +72,13 @@ unsigned int bitFlip(unsigned int input)
 		check *= 2;
 		pwr++;
 	}
-	pwr--;	//s-1
-	//cout << 
-    unsigned int output = input;
-    output |= (1u << pwr);
-	//http://stackoverflow.com/questions/6916974/change-a-bit-of-an-integer
+	pwr =-2;	//s-1th bit.  I subtract 2 here for the bit switch later.
 	
-    return output;
+    unsigned int output = input;
+	bitset<8>output(a);
+	x ^= 1 << pwr;	//flips the pwrth bit (http://www.cplusplus.com/forum/beginner/34307/)
+	
+    return x;
 }
 
 unsigned int init_allocator(unsigned int _basic_block_size, unsigned int _length)
@@ -108,8 +108,8 @@ memory made available to the allocator. If an error occurred, it returns 0. */
 		free_list.push_back(mem);
 		memory = (header*)malloc(block);
 		free_list.resize(freesize + 1);
-		basic = _basic_block_size;
-		memspace = block;
+		basic = _basic_block_size;	//setting global basic block size
+		memspace = block;	//setting global memory
 		return block;
 	}
 }
@@ -133,10 +133,10 @@ extern Addr my_malloc(unsigned int _length) {
 	//initialize block
 	for (int i = 0; i < free_list.size(); i++)
 	{
-		//split the blocks
+		//split the blocks (work in progress)
 	}
   
-  return malloc((size_t)_length);
+  return malloc((size_t)_length);	//idk what this should do, was part of the original code
 }
 
 extern int my_free(Addr _a) {
@@ -151,7 +151,7 @@ int main()
 	bitset<8> x(a);
 	cout << x << endl;
 	
-	x |= (1u << 3);
+	x ^=1 << 0;	//flips 1st bit
 	cout << x << endl;
 	return 0;
 }
