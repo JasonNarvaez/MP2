@@ -28,6 +28,7 @@
 #include <vector>
 #include <iostream>
 #include <bitset>
+#include <limits.h>
 
 /*--------------------------------------------------------------------------*/
 /* DATA STRUCTURES */ 
@@ -67,18 +68,26 @@ unsigned int bitFlip(unsigned int input)
 	//check for power
 	unsigned int check = 1;
 	int pwr;
+	/* 
 	while (check != input)
 	{
 		check *= 2;
 		pwr++;
 	}
 	pwr =-2;	//s-1th bit.  I subtract 2 here for the bit switch later.
+	 */
+	 
+	pwr = log2(input);//figure out the power of the input
+	pwr -=2;//s-1th bit. This bit will be flipped
+    
+	//unsigned int output = input;
 	
-    unsigned int output = input;
-	bitset<8>output(a);
-	x ^= 1 << pwr;	//flips the pwrth bit (http://www.cplusplus.com/forum/beginner/34307/)
+	bitset<8>output(input);
+	//cout<<output<<endl;
+	output ^= 1 << pwr;	//flips the pwrth bit (http://www.cplusplus.com/forum/beginner/34307/)
+	//cout<<output<<endl;
 	
-    return x;
+    return (unsigned int) (output.to_ulong());
 }
 
 unsigned int init_allocator(unsigned int _basic_block_size, unsigned int _length)
@@ -96,7 +105,7 @@ memory made available to the allocator. If an error occurred, it returns 0. */
 		++freesize;
 	}
 	
-	if (block > 4294967295)	{
+	if (block > UINT_MAX/* 4294967295 */)	{
 		return 0;
 	}
 	else	{
@@ -147,11 +156,13 @@ extern int my_free(Addr _a) {
 
 int main()
 {
-	int a = 127;
+	int a = 126;
 	bitset<8> x(a);
 	cout << x << endl;
 	
 	x ^=1 << 0;	//flips 1st bit
 	cout << x << endl;
-	return 0;
+	cout<<"=============================="<<endl
+		<<"bitFlip: "<<128<<"\n"<<endl;
+	cout<<bitFlip(128);
 }
