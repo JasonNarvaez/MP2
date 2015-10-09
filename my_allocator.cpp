@@ -29,7 +29,7 @@
 #include <iostream>
 #include <bitset>
 #include <limits.h>
-#include <cstdint>
+//#include <cstdint>
 
 /*--------------------------------------------------------------------------*/
 /* DATA STRUCTURES */ 
@@ -42,10 +42,11 @@
 /*--------------------------------------------------------------------------*/
 #pragma pack (1) // change the packing to 1 byte so no extra padding is added even on a 1 byte field
 struct header{
-	header(): next(NULL), size(8), free(true) {}
+	header(): next(NULL), size(8),offset(0), free(true) {}
 	//header* buddy;//8 bytes
 	header* next;//8 bytes
 	int size;//4 bytes
+	int offset;//4bytes
 	bool free;//1 byte
 	
 };
@@ -77,32 +78,44 @@ so if total length is 128 and our bbs is 8, then our last index is n = 4
 /*--------------------------------------------------------------------------*/
 
 /* Don't forget to implement "init_allocator" and "release_allocator"! */
-
+int release_allocator(){
+	//freedom
+	free(memory);
+	
+	
+}
 unsigned int bitFlip(header* input)// input is the address, need to find the size of the address block
 {
 	//check for power
 	unsigned int check = 1;
 	int pwr;
 	int block_addr;
-	int offset=input-memory;
-	header* output;
+
+	//store offset? yeah...
+	int offset_temp=input-memory;
+	
+	input->offset=offset_temp;
+	cout<<offset_temp<<endl;
+	cout<<input<<endl;
+	pwr = log2(input->size);//figure out the power of the input
+	pwr -=2;//s-1th bit. This bit will be flipped
 	
 	//input would not work, you need to take the log2(size of memory block that input points to)
 	//header* temp = input;
 	//header* inputptr = (header*) input;
-	cout<<input<<endl;
+	/*cout<<input<<endl;
 	cout<<"input size: "<<input->size<<endl;
 	pwr = log2(input->size);//figure out the power of the input
 	pwr -=2;//s-1th bit. This bit will be flipped
     
 	
 	
-	output=input;
+	
 	//cout<<output<<endl;
-	output ^= 1 << pwr;	//flips the pwrth bit (http://www.cplusplus.com/forum/beginner/34307/)
-	//cout<<output<<endl;
-	cout<<output<<endl;
-    return (unsigned int) (output);
+	offset_temp ^= 1 << pwr;	//flips the pwrth bit (http://www.cplusplus.com/forum/beginner/34307/)
+	cout<<offset_temp<<endl;*/
+	
+    return (unsigned int) (offset_temp);
 }
 
 unsigned int init_allocator(unsigned int _basic_block_size, unsigned int _length)//i think this is wrong
@@ -143,6 +156,7 @@ memory made available to the allocator. If an error occurred, it returns 0. */
 		//free_list.resize(freesize + 1);
 		memory->size=block;
 		memory->free=true;
+		memory->offset=0;
 		memory->next=NULL;
 
 		free_list.resize(freesize);
@@ -165,58 +179,115 @@ extern Addr my_malloc(unsigned int _length) {// _length is memory requested by t
 	address of the allocated portion. Returns 0 when out of memory. */
 	
 	int tempsize = memspace;
-	int power = free_list.size();
 	
 	
 	//if _length = 12 and sizeof = 13, then we know 4 < log2(26) < 5, so the correct value would be 5, therefore 5 = ceil(log2(_length+sizeof(header)))
 	tempsize = ceil(log2(_length + header_size)); 
+	
+	/*
 	if (tempsize < basic)//case where we need less than the bbs; we just give them the bbs 
 		tempsize = log2(basic);//
-		
+		*/
 	//our freelist starts index[0] at the bbs
 	//so then if we want constant time accessing, we must convert it to the appropriate index
+	cout<<tempsize<<"tempsize"<<endl;
+
 	int temp_val = pow(2,tempsize);//if tempsize = 5, then temp_val is 32
 	temp_val = temp_val / basic;// 32 / 8 = 4
-	temp_val = log2(temp_val);//contains the appropriate index in freelist
-	bool is_filled = true;
-	 
-	while(is_filled){
 	
-		if(free_list[temp_val] == NULL){//there are no available blocks, start SPLITING
-			//uintptr_t myint = reinterpret_cast<uintptr_t>(&free_list[free_list.size()-1]);
-			//bitFlip(myint);
-			//bitFlip(free_list[free_list.size()-1]);
-			/* 
-			for(int i=0;i<free_list.size();i++){
-				if()
+	temp_val = log2(temp_val);//contains the appropriate index in freelist
+	
+
+	
+
+		if(free_list[temp_val] == NULL){//there are no available blocks, go up until you find a linked list that is filled
+			int going_up=0;
+	
+			while((free_list[temp_val+going_up]==NULL)&&((temp_val+going_up)<=free_list.size()-1)){
+				going_up++;
+				
+			}//now we have found a filled linked list in vector[temp_val+going_up]
+			//keep splitting until you reach your level
+			//continually adding the things into free list.
+			//but also moving things into proper tiers.
+			
+			while(going_up>0){
+				//moving it out
+				header* temp=free_list[temp_val+going_up];
+				free_list[temp_val+going_up]=temp->next;
+				
+			
+				temp->size=temp->size/2;
+				
+				//adding things into free list
+				//because we are adding 2 blocks into the vector.
+				temp->next=temp+(temp->size)/2;
+				temp->next->next=free_list[temp_val+going_up]->next;
+				free_list[temp_val+going_up]=temp;
+				
+			
+				//now pointer pointing correctly?
+				
+				//do something about buddies here....
+				//......
+				//......
+				//......
+				//.....
+				
+				
+				going_up-=1;
+				
 			}
-			 */
 			
-			is_filled = false;//temporary, remove when finished
-		}
-		else{//WE FOUND IT!!!111!
-			
-			
-			is_filled=false;
 			
 		}
-	}
+		//Now we know that the list has something in it add stuff.
+		//and take it out of free list
+		free_list[temp_val]->free=false;
+		free_list[temp_val]=free_list[temp_val]->next;
+		
+	
 	 
 	cout<<"_length: "<<_length<<endl;
 	cout<<"tempsize: "<<tempsize<<endl;
-	//initialize block
-	for (int i = 0; i < free_list.size(); i++)
-	{
-		
-		//split the blocks (work in progress)
-	}
+	
   
   return malloc((size_t)_length);	//idk what this should do, was part of the original code
 }
 
 extern int my_free(Addr _a) {
   /* Same here! */
-  free(_a);
+ //put back into free list
+	header* temp = (header*)_a;
+
+	//standard checks empty/already free
+	if(_a == NULL) {
+        cout<<"not found"<<endl;
+        return -1;
+    }
+	if(temp->free == true){
+       cout<<"already free"<<endl;
+        return -1;
+	}else{
+		//now put back in free list
+		int temp_val=+(temp->size);
+		temp_val = temp_val / basic;// 32 / 8 = 4
+		temp_val = log2(temp_val);//contains the appropriate index in freelist
+		
+		//link list it in
+		temp->free=true;
+		temp->next=free_list[temp_val]->next;
+		free_list[temp_val]=temp;
+		
+		//now check to see if it can buddy back up
+		//.....
+		//.....
+		//.....
+		//....
+		//....
+	}
+	
+  
   return 0;
 }
 
@@ -270,10 +341,12 @@ int main()
 
 	cout<<"Print List:"<<endl;
 	PrintList();
-	bitFlip(memory);
+	//bitFlip(memory);
 	//my_malloc(12);
+
 	
-	
+	my_malloc(3);
+	PrintList();
 	
 	return 0;
 }
