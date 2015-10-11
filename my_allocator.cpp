@@ -198,16 +198,17 @@ extern Addr my_malloc(unsigned int _length) {// _length is memory requested by t
 	int tempsize = memspace;
 	
 	
-	//if _length = 12 and sizeof = 13, then we know 4 < log2(26) < 5, so the correct value would be 5, therefore 5 = ceil(log2(_length+sizeof(header)))
+	//if _length = 12 and sizeof = 13, then we know 4 < log2(25) < 5, so the correct value would be 5, therefore 5 = ceil(log2(_length+sizeof(header)))
 	tempsize = ceil(log2(_length + header_size)); 
-	
+	cout<<"length: "<<_length<<endl;
+	cout<<"header size: "<<header_size<<endl;
 	/*
 	if (tempsize < basic)//case where we need less than the bbs; we just give them the bbs 
 		tempsize = log2(basic);//
 		*/
 	//our freelist starts index[0] at the bbs
 	//so then if we want constant time accessing, we must convert it to the appropriate index
-	cout<<tempsize<<"tempsize"<<endl;
+	cout<<"tempsize"<<tempsize<<endl;
 
 	int temp_val = pow(2,tempsize);//if tempsize = 5, then temp_val is 32
 	temp_val = temp_val / basic;// 32 / 8 = 4
@@ -219,11 +220,12 @@ extern Addr my_malloc(unsigned int _length) {// _length is memory requested by t
 
 		if(free_list[temp_val] == NULL){//there are no available blocks, go up until you find a linked list that is filled
 			int going_up=0;
+			cout<<"temp_val: "<<temp_val<<endl;
 			cout<<"my malloc stuff"<<endl;
 
-			while((free_list[temp_val+going_up]==NULL)&&((temp_val+going_up)<=free_list.size()-1)){
+			while((free_list[temp_val+going_up]==NULL)&&((temp_val+going_up)<=free_list.size()-1)){//keep going up the vector until we find a block of memory or we reach the biggest memory block
 				going_up++;
-				
+				cout<<"going up value: "<<going_up<<endl;
 			}//now we have found a filled linked list in vector[temp_val+going_up]
 			//keep splitting until you reach your level
 			//continually adding the things into free list.
@@ -239,10 +241,24 @@ extern Addr my_malloc(unsigned int _length) {// _length is memory requested by t
 				
 				//adding things into free list
 				//because we are adding 2 blocks into the vector.
-				temp->next=temp+(temp->size)/2;
+				//call bitFlip here???
 				
-				temp->next->next=free_list[temp_val+going_up]->next;//THIS CAUSES SEGFAULT
-				free_list[temp_val+going_up]=temp;
+				temp->next = (header*) bitFlip(temp);//get the buddy of temp
+				temp->next->size = (temp->size)/2;
+				
+				
+				
+				free_list[temp_val+going_up-1]=temp;
+				
+				/*old code *********************
+				//temp->next=temp+(temp->size)/2;
+				//temp->next = (temp->size)/2;
+				//temp->next->next=free_list[temp_val+going_up]->next;//THIS CAUSES SEGFAULT
+				//free_list[temp_val+going_up]=temp;
+				
+				old code ***********************
+				*/
+				PrintList();
 				
 				//now pointer pointing correctly?
 				
@@ -322,12 +338,12 @@ void PrintList(){
 			current = free_list[i];
 			while(current!=NULL){
 				count++;
-				cout<<count<<endl;
+				//cout<<count<<endl;
 				
 				current = current->next;
 			}
 			//cout<<free_list[i]->size<<endl;
-			
+			cout<<count<<endl;
 		}
 		else{
 			cout<<"Empty!"<<endl;
@@ -360,9 +376,9 @@ int main()
 	cout<<"Print List:"<<endl;
 	PrintList();
 	
-	bitFlip(memory);
+	//bitFlip(memory);
 	
-	my_malloc(12);
+	my_malloc(2);
 
 	
 	//my_malloc(3);
