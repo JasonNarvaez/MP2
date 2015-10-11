@@ -84,12 +84,14 @@ int release_allocator(){
 	
 	
 }
-unsigned int bitFlip(header* input)// input is the address, need to find the size of the address block
+//unsigned int bitFlip(header* input)// input is the address, need to find the size of the address block
+unsigned long long bitFlip(header* input)// input is the address, need to find the size of the address block
+
 {
 	//check for power
 	unsigned int check = 1;
 	int pwr;
-	int block_addr;
+	//int block_addr;
 
 	//store offset? yeah...
 	int offset_temp=input-memory;
@@ -97,6 +99,20 @@ unsigned int bitFlip(header* input)// input is the address, need to find the siz
 	input->offset=offset_temp;
 	cout<<offset_temp<<endl;
 	cout<<input<<endl;
+	
+	//Jason's attempt
+	//unsigned int _a = input->size;
+	unsigned int block_size = input->size;
+	unsigned long long _a = (unsigned long long) input;
+	unsigned int block_addr = _a - sizeof(header);
+	unsigned long long offset = block_addr - (unsigned long long) memory;
+	unsigned long long buddy_offset = offset ^ block_size;
+	unsigned long long bud_address = (unsigned long long) memory + buddy_offset;
+	
+	cout<<"value of passed in address: "<<_a<<endl;
+	cout<<"value of buddy address: "<<bud_address<<endl;
+	
+	
 	pwr = log2(input->size);//figure out the power of the input
 	pwr -=2;//s-1th bit. This bit will be flipped
 	
@@ -115,7 +131,8 @@ unsigned int bitFlip(header* input)// input is the address, need to find the siz
 	offset_temp ^= 1 << pwr;	//flips the pwrth bit (http://www.cplusplus.com/forum/beginner/34307/)
 	cout<<offset_temp<<endl;*/
 	
-    return (unsigned int) (offset_temp);
+	return bud_address;
+    //return (unsigned int) (offset_temp);
 }
 
 unsigned int init_allocator(unsigned int _basic_block_size, unsigned int _length)//i think this is wrong
@@ -202,7 +219,8 @@ extern Addr my_malloc(unsigned int _length) {// _length is memory requested by t
 
 		if(free_list[temp_val] == NULL){//there are no available blocks, go up until you find a linked list that is filled
 			int going_up=0;
-	
+			cout<<"my malloc stuff"<<endl;
+
 			while((free_list[temp_val+going_up]==NULL)&&((temp_val+going_up)<=free_list.size()-1)){
 				going_up++;
 				
@@ -217,15 +235,15 @@ extern Addr my_malloc(unsigned int _length) {// _length is memory requested by t
 				free_list[temp_val+going_up]=temp->next;
 				
 			
-				temp->size=temp->size/2;
+				temp->size=(temp->size)/2;
 				
 				//adding things into free list
 				//because we are adding 2 blocks into the vector.
 				temp->next=temp+(temp->size)/2;
-				temp->next->next=free_list[temp_val+going_up]->next;
+				
+				temp->next->next=free_list[temp_val+going_up]->next;//THIS CAUSES SEGFAULT
 				free_list[temp_val+going_up]=temp;
 				
-			
 				//now pointer pointing correctly?
 				
 				//do something about buddies here....
@@ -243,7 +261,7 @@ extern Addr my_malloc(unsigned int _length) {// _length is memory requested by t
 		}
 		//Now we know that the list has something in it add stuff.
 		//and take it out of free list
-		free_list[temp_val]->free=false;
+		free_list[temp_val]->free=false;//segfault
 		free_list[temp_val]=free_list[temp_val]->next;
 		
 	
@@ -341,12 +359,14 @@ int main()
 
 	cout<<"Print List:"<<endl;
 	PrintList();
-	//bitFlip(memory);
-	//my_malloc(12);
+	
+	bitFlip(memory);
+	
+	my_malloc(12);
 
 	
-	my_malloc(3);
-	PrintList();
+	//my_malloc(3);
+	//PrintList();
 	
 	return 0;
 }
