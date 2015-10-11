@@ -1,0 +1,67 @@
+void combine(Addr _a){
+    struct header *current_node = (struct header*)_a;
+    int size = current_node->size;
+    int current_index = log2(size/basic);
+
+    
+
+    int offset = (char*)current_node - (char*)head;
+    int boffset = (unsigned long long)offset ^ (unsigned long long)size;
+    header *buddy_node = (struct header*) ((char *)head + boffset);
+    if(buddy_node->free  == true){
+        //buddy header is empty
+        //combine
+        
+		//take out fromfree list
+		remove_from_free(buddy_node, current_index);
+		
+       header *large_node;
+        if(buddy_node < current_node){
+            large_node = buddy_node;
+		
+        }else{
+            large_node = current_node;
+        large_node->size = size * 2;
+        large_node->next = NULL;
+        remove_from_free(current_node, current_index);
+        void* start_point = (Addr)((char*)large_node + header_size);
+        printf("Working with size: %i - Address: %p\n", large_node->size, start_point);
+        memset(start_point, 0, large_node->size - header_size);
+        combine(large_node);
+		}
+    }else{
+        //buddy header in use
+        //don't combine
+        void* start_point = (Addr)((char*)current_node + header_size);
+        memset(start_point, 0, current_node->size - header_size);
+        return;
+    }
+	
+}
+
+
+
+void remove_from_free(struct node* old_node, int index){
+    struct node* i = free_list[index];
+    if(i == old_node){
+        if(i->next == NULL)
+            free_list[index] = NULL;
+        else
+            free_list[index] = i->next;
+        return;
+    }
+    while(i->next != old_node && i->next != NULL){
+        i = i->next;
+    }
+    if(i->next == NULL) {
+        
+        return; // Error: node not found
+    }
+    if(i->next->next == NULL)
+        i->next = NULL;
+    else
+        i->next = i->next->next;
+    
+    return;
+    
+}
