@@ -44,11 +44,11 @@
 /*--------------------------------------------------------------------------*/
 #pragma pack (1) // change the packing to 1 byte so no extra padding is added even on a 1 byte field
 struct header{
-	header(): next(NULL), size(8),offset(0), free(true) {}
+	header(): next(NULL), size(8),/* offset(0), */ free(true) {}
 	//header* buddy;//8 bytes
 	header* next;//8 bytes
 	int size;//4 bytes
-	int offset;//4bytes
+	//int offset;//4bytes
 	bool free;//1 byte
 	
 };
@@ -86,6 +86,57 @@ int release_allocator(){
 	
 	
 }
+
+void remove_flist(header* target, int index){
+	
+	
+	header* current = free_list[index];
+	if(current == NULL) return;
+	if(current == target) free_list[index] = free_list[index]->next;
+	while(current != NULL){
+		
+		if(current->next == NULL) return;
+		else if(current->next == target){
+			current->next = current->next->next;
+			
+		}
+			
+		current = current->next;
+	}
+	
+
+}
+
+void insert_flist(header* target, int index){
+	
+	target->next = free_list[index];
+	free_list[index] = target;
+	
+
+}
+
+bool find_header(header* target, int index){
+	
+	
+	header* current = free_list[index];
+	if(current == NULL) { cout<<"target is NULL!"<<endl; return false; }
+	if(current == target) return true;
+	while(current != NULL){
+		
+		if(current->next == NULL) return false;
+		else if(current->next == target){
+			return true;
+			
+		}
+			
+		current = current->next;
+	}
+	
+	return false;
+
+}
+
+
 //unsigned int bitFlip(header* input)// input is the address, need to find the size of the address block
 unsigned long long bitFlip(header* input)// input is the address, need to find the size of the address block
 
@@ -96,10 +147,10 @@ unsigned long long bitFlip(header* input)// input is the address, need to find t
 	//int block_addr;
 
 	//store offset? yeah...
-	int offset_temp=input-memory;
+	//int offset_temp=input-memory;
 	
-	input->offset=offset_temp;
-	cout<<offset_temp<<endl;
+	//input->offset=offset_temp;
+	//cout<<offset_temp<<endl;
 	cout<<input<<endl;
 	
 	//Jason's attempt
@@ -114,7 +165,7 @@ unsigned long long bitFlip(header* input)// input is the address, need to find t
 	cout<<"value of passed in address: "<<_a<<endl;
 	cout<<"value of buddy address: "<<bud_address<<endl;
 	
-	input->offset = offset;//update the offset in the input header, use this offset 
+	//input->offset = offset;//update the offset in the input header, use this offset 
 	
 	pwr = log2(input->size);//figure out the power of the input
 	pwr -=2;//s-1th bit. This bit will be flipped
@@ -137,25 +188,7 @@ unsigned long long bitFlip(header* input)// input is the address, need to find t
 	return bud_address;
     //return (unsigned int) (offset_temp);
 }
-/* bitFlip2(header* input){
-	memptr split(memptr toobig, int ind)
-	header* h = input;								//copies address of one about to be split
-	h->size = h->size/2;
-	unsigned long long addr = (unsigned long long) m;						//get addr, do relative bit flipping, then return buddy
-	unsigned long long reladdr = addr - (unsigned long long) s.small;
-	unsigned long long relbud = reladdr ^= (1 << ind);
-	unsigned long long bud = (unsigned long long) s.small + relbud;
-	memptr n = (memptr) bud;							//creates buddy with address s-1th bit flipped******************************
-	n->size = toobig->size/2;
-	alloc a;
-	pointer p = s.small + (ind-1)*sizeof(a);					//inserts first copy
-	p->first = m;
-	p->last = m;
-	return n;									//returns buddy (not in free list, allocated)
 
-	
-	
-} */
 
 
 unsigned int init_allocator(unsigned int _basic_block_size, unsigned int _length)//i think this is wrong
@@ -180,31 +213,21 @@ memory made available to the allocator. If an error occurred, it returns 0. */
 		return 0;
 	}
 	else	{
-		//header mem;
-		/*header* memptr;
-	
-		memptr->size = block;
-		memptr->next = NULL;
-		*/
-		//use first() and last() to access free_list elements
-		cout<<"block size: "<<block<<endl;
-		cout<<"freesize: "<<freesize<<endl;
 		
-		//free_list.push_back(mem);
 		
 		memory = (header*)malloc(block);
 		//free_list.resize(freesize + 1);
 		memory->size=block;
 		memory->free=true;
-		memory->offset=0;
+		//memory->offset=0;
 		memory->next=NULL;
 
 		free_list.resize(freesize);
 		free_list[freesize-1] = memory;//put the allocated block into the appropriate free list
 		//cout<<"mem size: "<<memptr->size<<endl;
-		cout<<"memory size: "<<free_list[free_list.size()-1]->size<<endl;
-		cout<<"memory address: "<<free_list[free_list.size()-1]<<endl;
-		cout<<"memory address next: "<<free_list[free_list.size()-1]->next<<endl;
+		// cout<<"memory size: "<<free_list[free_list.size()-1]->size<<endl;
+		// cout<<"memory address: "<<free_list[free_list.size()-1]<<endl;
+		// cout<<"memory address next: "<<free_list[free_list.size()-1]->next<<endl;
 		basic = _basic_block_size;	//setting global basic block size
 		memspace = block;	//setting global total memory
 		return block;
@@ -248,7 +271,7 @@ extern Addr my_malloc(unsigned int _length) {// _length is memory requested by t
 
 			while((free_list[temp_val+going_up]==NULL)&&((temp_val+going_up)<=free_list.size()-1)){//keep going up the vector until we find a block of memory or we reach the biggest memory block
 				going_up++;
-				cout<<"going up value: "<<going_up<<endl;
+				//cout<<"going up value: "<<going_up<<endl;
 			}//now we have found a filled linked list in vector[temp_val+going_up]
 			//keep splitting until you reach your level
 			//continually adding the things into free list.
@@ -258,7 +281,7 @@ extern Addr my_malloc(unsigned int _length) {// _length is memory requested by t
 				//moving it out
 				header* temp=free_list[temp_val+going_up];
 				free_list[temp_val+going_up]=temp->next;//update the freelist
-				cout<<"temp_val + goingup: "<<temp_val+going_up<<endl;
+				//cout<<"temp_val + goingup: "<<temp_val+going_up<<endl;
 				
 				
 				//adding things into free list
@@ -268,8 +291,8 @@ extern Addr my_malloc(unsigned int _length) {// _length is memory requested by t
 				//temp->next = (header*) bitFlip(temp);//get the buddy of temp
 				//temp->next = temp;
 				//temp = (header*) temp + (temp->size)/2;//EASILY find the address of the new buddy
-				cout<<"+++++"<<endl;
-				cout<<"temp + size/2: "<<6316048+64<<endl;
+				//cout<<"+++++"<<endl;
+				//cout<<"temp + size/2: "<<6316048+64<<endl;
 				unsigned long long split = (unsigned long long) temp + (temp->size)/2;//EASILY find the address of the new buddy
 				temp->next = (header*) split;
 				//temp->next =  temp + (temp->size)/2;//EASILY find the address of the new buddy
@@ -286,14 +309,14 @@ extern Addr my_malloc(unsigned int _length) {// _length is memory requested by t
 				cout<<"temp size: "<<temp->size<<endl;
 				
 				
-				cout<<"memory origin: "<<mem_int<<endl;
-				cout<<"first allocated block: "<<block1_int<<endl;
-				cout<<"second allocated block: "<<block2_int<<endl<<endl;
+				//cout<<"memory origin: "<<mem_int<<endl;
+				//cout<<"first allocated block: "<<block1_int<<endl;
+				//cout<<"second allocated block: "<<block2_int<<endl<<endl;
 				
 				//cout<<"adjusted second allocated block: "<<block2_int - sizeof(header)<<endl;
 				//cout<<"adjusted first allocated block: "<<block1_int - sizeof(header)<<endl<<endl;
 				
-				temp->next->offset = temp->offset;//update the offset value in the header of the buddy block
+				//temp->next->offset = temp->offset;//update the offset value in the header of the buddy block
 				
 				header* placeholder = temp;//we need to switch temp and temp->next
 				temp = temp->next;
@@ -420,9 +443,14 @@ extern int my_free(Addr _a) {
 		//free_list[temp_val]=temp;
 		old code***********
 		*/
-		
-		temp->next = free_list[temp_val];
-		free_list[temp_val]=temp;//put the released memory block back into the freelist
+		//cout<<"+++++++++++++++++++++++++++++++"<<endl;
+		//cout<<temp_val<<endl;
+		PrintList2();
+		insert_flist(temp,temp_val);
+		cout<<endl;
+		PrintList2();
+		//temp->next = free_list[temp_val];
+		//free_list[temp_val]=temp;//put the released memory block back into the freelist
 		
 		
 		//now check to see if it can buddy back up
@@ -448,11 +476,11 @@ extern int my_free(Addr _a) {
 		//while(going_up>0){
 		for(int i=0;i<free_list.size()-1-temp_val;i++){
 				//moving it out
-			
+			//cout<<"===BEGINNING LOOP==="<<endl;
 			//Jason's attempt
 			//unsigned int _a = input->size;
 			
-			header* temp = (header*) _a - sizeof(header);
+			//header* temp = (header*) _a - sizeof(header);
 			
 			unsigned long long block_size = temp->size;
 			
@@ -504,39 +532,47 @@ extern int my_free(Addr _a) {
 			cout<<"free status of left block: "<<tempL->free<<endl;
 			cout<<"free status of right block: "<<tempR->free<<endl;
 			cout<<"~~~~~"<<endl;
-			
-			
-			if(tempL->free == true && tempR->free == true){
+			cout<<"tempR in list["<<temp_val+i<<"]: "<<find_header(tempR,temp_val+i)<<endl;
+			cout<<"tempL in list["<<temp_val+i<<"]: "<<find_header(tempL,temp_val+i)<<endl;
+			PrintList2();
+			cout<<"tempR in list["<<temp_val+i<<"]: "<<find_header(tempR,temp_val+i)<<endl;
+			cout<<"tempL in list["<<temp_val+i<<"]: "<<find_header(tempL,temp_val+i)<<endl;
+			cout<<"~~~~~"<<endl;
+			if(tempL->free == true && tempR->free == true && find_header(tempR,temp_val+i)== true && find_header(tempL,temp_val+i)== true){
 				tempL->size=2*(temp->size);//update size
+				temp = tempL;
+				//tempR->size=2*(temp->size);//update size
 				cout<<"tempL size: "<<tempL->size<<endl;
 				tempL->free = true;
-					
-				tempL->next = free_list[temp_val+1+i];
-				free_list[temp_val+1+i]=tempL;//put the released merged memory blocks back into the freelist
+				cout<<"(coalescing) free_list["<<temp_val+1+i<<"]"<<endl;
+				cout<<(unsigned long long)free_list[temp_val+1+i]<<endl;	
+				
+				remove_flist(tempR,temp_val+i);
+				remove_flist(tempL,temp_val+i);
+				
+				//insert_flist(tempR,temp_val+i+1);
+				insert_flist(tempL,temp_val+i+1);
+				//tempL->next = free_list[temp_val+1+i];
+				//tempL->next = NULL;
+			
+				//free_list[temp_val+1+i]=tempL;//put the released merged memory blocks back into the freelist
 				//bitFlip(free_list[temp_val+1+i]);//update the offset of the next block index (bitFlip does this automatically in the function), we are not actually flipping any bits 
-				cout<<"left block: "<<my_temp<<endl;
-				cout<<"left block: "<<tempL<<endl;
-				cout<<"right block: "<<tempR<<endl;
-				unsigned long long foo = (unsigned long long) free_list[temp_val+i];
-				cout<<"free_list["<<temp_val+i<<"]"<<endl;
-				cout<<"next in free list: "<<foo<<endl;
-				cout<<"next in free list: "<<free_list[temp_val+i]->next<<endl;
-				memset(tempR, 0,tempR->size);
+				// cout<<"left block: "<<my_temp<<endl;
+				// cout<<"left block: "<<tempL<<endl;
+				// cout<<"right block: "<<tempR<<endl;
 				
-				bool done = false;
-				header* current = free_list[temp_val+i];
+				//unsigned long long foo = (unsigned long long) free_list[temp_val+i];
+				// cout<<"free_list["<<temp_val+i<<"]"<<endl;
+				// cout<<"next in free list: "<<foo<<endl;
+				// cout<<"next in free list: "<<free_list[temp_val+i]->next<<endl;
+				//memset(tempR, 0,tempR->size);
+				PrintList2();
+				//bool done = false;
+				//header* current = free_list[temp_val+i];
 				
-				/* 
-				while(!done){
-					if(current != 0){
-						if(current->next == tempL || current->next == tempR){
-							cout<<"flushing: "<< (unsigned long long)current->next<<endl;
-							
-						}
-					}
-				}
-				 */
+				
 				//this might not work if we start freeing all willy-nilly
+				/* 
 				for(int j=0;j<2;j++){//flush out the two headers from their previous index 
 					if(free_list[temp_val+i] != 0){
 						cout<<"flushing: "<< (unsigned long long)free_list[temp_val+i]<<endl;
@@ -552,7 +588,7 @@ extern int my_free(Addr _a) {
 					}	
 					
 				}
-				 
+				  */
 				cout<<(unsigned long long)free_list[temp_val+i]<<endl;
 			}
 			
@@ -562,69 +598,7 @@ extern int my_free(Addr _a) {
 				return 0;//don't do anything else, we already returned it to the freelist above
 				
 			}
-			/* 
-			header* tempR;
-			header* tempL;
-			cout<<"~~~~~~~~~~~"<<endl;
-			free_list[temp_val+i]->free=true;
-			
-			if(free_list[temp_val+i]->next == NULL){//case where the right buddy is being freed
-				tempR = free_list[temp_val+i];//buddy on the right
-				tempL = tempR - tempR->offset;//buddy on the left, since we can subtract the offset from the right buddy to get to the left buddy
-				cout<<"here************"<<endl;
-			}
-			else {//case where the left buddy is being freed
-				tempL = free_list[temp_val+i];//buddy on the left
-				tempR = tempL->next;//the left buddy knows the address of the right buddy b/c it points to it in the next pointer
-				cout<<"here @@@@@@@@@@@@@@@@@"<<endl;
-			}
-			cout<<"tempL free: "<<tempL->free<<endl;
-			cout<<"tempR free: "<<tempR->free<<endl;
-			if(tempL->free == false || tempR->free == false){//case where left or right buddy is not free
-				cout<<"SPECIAL CONDITION"<<endl;
-				
-				return 0;//don't do anything else, we already returned it to the freelist above
-				
-			}
-			//else: left buddy is actually free, begin coalescing
-				
-			//free_list[temp_val+going_up]=temp->next;//update the freelist
-				
-			else if(tempL->free == true && tempR->free == true){
-				tempL->size=2*(temp->size);//update size
-				cout<<"tempL size: "<<tempL->size<<endl;
-				tempL->free = true;
-					
-				tempL->next = free_list[temp_val+1+i];
-				free_list[temp_val+1+i]=tempL;//put the released merged memory blocks back into the freelist
-				bitFlip(free_list[temp_val+1+i]);//update the offset of the next block index (bitFlip does this automatically in the function), we are not actually flipping any bits 
-				cout<<"next in free list: "<<free_list[temp_val+i]->next<<endl;
-				for(int j=0;j<2;j++){
-					if(free_list[temp_val+i] != 0){
-						free_list[temp_val+i] = free_list[temp_val+i]->next;
-					}
-				}
-				
-			}
-			//temp->next = (header*) bitFlip(temp);//get the buddy of temp
-			//temp->next->size = (temp->size)/2;
-				
-			//temp->next->offset = temp->offset;//update the offset value in the header of the buddy block
-				
-			//free_list[temp_val+going_up-1]=temp;//put the newly split block in the appropriate freelist index
-				
-				
-			//PrintList();
-				
-			//now pointer pointing correctly?
-				
-				//do something about buddies here....
-				//......
-				//......
-				//......
-				//.....
-				
-				 */
+			cout<<"=====END OF LOOP======"<<endl;
 			going_up-=1;
 				
 		}
@@ -665,31 +639,45 @@ void PrintList(){
 	
 }
 
+void PrintList2(){
+	
+	for(int i=0;i<free_list.size();i++){
+		int count = 0;
+
+		header* current = NULL;
+		cout<<"size: "<<basic * pow(2,i)<<" ["<<i<<"]: ";
+		if(free_list[i] != NULL){
+			//cout<<"size: "<<basic * pow(2,i)<<" ["<<i<<"]: "<<free_list[i]->size<<endl;
+			
+			current = free_list[i];
+			while(current!=NULL){
+				//count++;
+				//cout<<count<<endl;
+				cout<<(unsigned long long)current<<", ";
+				current = current->next;
+			}
+			//cout<<free_list[i]->size<<endl;
+			//cout<<count<<endl;
+			cout<<endl;
+		}
+		else{
+			cout<<"Empty!"<<endl;
+		}
+	}
+	
+}
 
 
-
-
+/* 
 int main()
 {
-	/* int a = 126;
-	bitset<8> x(a);
-	cout << x << endl;
 	
-	x ^=1 << 0;	//flips 1st bit
-	cout << x << endl; */
-	
-	/* 
-	cout<<"=============================="<<endl
-		<<"bitFlip: "<<128<<"\n"<<endl;
-	cout<<bitFlip(128);
-	cout<<"header size:"<<endl;
-	 */
 	
 	
 	
 	
 	init_allocator(8,256);
-
+	cout<<"origin: "<<(unsigned long long) memory<<endl;
 	cout<<"Print List:"<<endl;
 	PrintList();
 	
@@ -701,13 +689,15 @@ int main()
 	// cout<<"this should be the original memory: "<<buddyright<<endl;
 	// cout<<"memoryy address: "<<memory<<endl;
 	
-	unsigned long long * block1 = (unsigned long long*) my_malloc(12);
+	//unsigned long long * block1 = (unsigned long long*) my_malloc(64);
 	//cout<<"block1: "<<block1<<endl;
 	cout<<"second my malloc==========="<<endl;
+	int* block1 = (int*) my_malloc(12);
 	int* block2 = (int*) my_malloc(12);
 	int* block3 = (int*) my_malloc(12);
 	int* block4 = (int*) my_malloc(12);
-	int* block5 = (int*) my_malloc(12);
+	
+	//int* block5 = (int*) my_malloc(12);
 	//cout<<"block2: "<<block2<<endl;
 	//unsigned long long block1_int = (unsigned long long) block1;
 	//unsigned long long block2_int = (unsigned long long) block2;
@@ -719,7 +709,7 @@ int main()
 	//cout<<"size of header: "<<sizeof(header)<<endl;
 	//cout<<"block1: "<<block1<<endl;
 	//cout<<"block2: "<<block2<<endl;
-	int* size_header = (int*) sizeof(header);
+	//int* size_header = (int*) sizeof(header);
 	//block1 = block1 - sizeof(header);
 	//cout<<"block1 - header: "<<block1 - 17<<endl;
 	//cout<<"block2 - header: "<<block2 - sizeof(header)<<endl;
@@ -727,14 +717,21 @@ int main()
 	cout<<"========================="<<endl;
 	cout<<"print list after mallocs:"<<endl;
 	PrintList();
+	cout<<endl;
+	PrintList2();
 	
-	cout<<"========================="<<endl;
-	cout<<"freeing:"<<endl;
 	int check = my_free(block1);
 	cout<<"freed block 1 ************"<<endl;
 	cout<<"========================="<<endl;
 	cout<<"print list in between:"<<endl;
-	PrintList();
+	PrintList2();
+	
+	cout<<"========================="<<endl;
+	cout<<"freeing:"<<endl;
+	my_free(block3);
+	cout<<"freed block 3 ************"<<endl;
+	PrintList2();
+	
 	
 	//my_free(block1);
 	my_free(block2);
@@ -742,7 +739,13 @@ int main()
 	cout<<"freed block 2 ************"<<endl;
 	cout<<"========================="<<endl;
 	cout<<"print list after frees:"<<endl;
+	PrintList2();
+	
+	my_free(block4);
+	
 	PrintList();
+	cout<<endl;
+	PrintList2();
 	//my_malloc(3);
 	//PrintList();
 	
@@ -750,3 +753,4 @@ int main()
 	
 	return 0;
 }
+ */
