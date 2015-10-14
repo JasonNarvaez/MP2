@@ -30,6 +30,7 @@
 #include <bitset>
 #include <limits.h>
 #include <stdlib.h>
+#include <string.h>
 //#include <cstdint>
 
 /*--------------------------------------------------------------------------*/
@@ -299,8 +300,15 @@ extern Addr my_malloc(unsigned int _length) {// _length is memory requested by t
 				temp->next = placeholder;
 				temp->next->next = NULL;//set temp->next->next to NULL or else temp->next->next will point to temp
 				
-				free_list[temp_val+going_up-1]=temp;//put the newly split block in the appropriate freelist index
+				cout<<"free_list["<<temp_val+going_up-1<<"] = "<<(unsigned long long)temp<<endl;
 				
+				temp->next->next = free_list[temp_val+going_up-1];//attach existing blocks to the end of newly allocated blocks
+				
+				free_list[temp_val+going_up-1]=temp;//put the newly split block in the appropriate freelist index
+				free_list[temp_val+going_up-1]->free = true;
+				free_list[temp_val+going_up-1]->next->free = true;
+				cout<<"temp: "<<(unsigned long long)temp<<endl;
+				cout<<"temp->next: "<<(unsigned long long)temp->next<<endl;
 				/*old code *********************
 				//temp->next=temp+(temp->size)/2;
 				//temp->next = (temp->size)/2;
@@ -331,6 +339,7 @@ extern Addr my_malloc(unsigned int _length) {// _length is memory requested by t
 			//cout<<"free_list[tempval] size: "<<free_list[temp_val]->size<<endl;
 			header* returned_memblock = free_list[temp_val];//same as the below (returned_block)
 			//cout<<"temp size: "<<returned_memblock->size<<endl;
+			cout<<"returned block status: "<<returned_memblock->free<<endl;
 			free_list[temp_val]->free=false;//IDK????
 			free_list[temp_val]=free_list[temp_val]->next;//update the freelist to point to the next free block
 			unsigned long long block1_int = (unsigned long long) returned_memblock;
@@ -338,7 +347,7 @@ extern Addr my_malloc(unsigned int _length) {// _length is memory requested by t
 			cout<<"adjusted second allocated block: "<<block1_int + sizeof(header)<<endl<<endl;
 			cout<<"size of header"<<sizeof(header)<<endl;
 			cout<<"returned block: "<<returned_memblock<<endl;
-			
+			cout<<"returned block status: "<<returned_memblock->free<<endl;
 			cout<<"returned block + header: "<<returned_memblock+sizeof(header)<<endl;
 			
 			return (returned_memblock+sizeof(header));//we give them the part of the memory block that does not include the header
@@ -346,8 +355,8 @@ extern Addr my_malloc(unsigned int _length) {// _length is memory requested by t
 		}
 		//Now we know that the list has something in it add stuff.
 		//and take it out of free list
-		free_list[temp_val]->free=false;//IDK????
-		free_list[temp_val]->next->free=true;
+		free_list[temp_val]->free=false;//we return this block
+		free_list[temp_val]->next->free=true;//keep this block in the freelist
 		//free_list[temp_val]=free_list[temp_val]->next;
 		
 		header* returned_block = free_list[temp_val];// return the rightmost memory block
@@ -461,20 +470,24 @@ extern int my_free(Addr _a) {
 			
 			//cout<<"passed in hex address: "<<_a<<endl;
 			//cout<<"passed in address: "<<(unsigned long long)_a<<endl;
-			cout<<"address of start of block: "<<temp<<endl;
+			//cout<<"address of start of block: "<<temp<<endl;
 			
 			header* bud_address_ptr = (header*) bud_address;
 			cout<<"value of passed in address: "<<my_temp<<endl;
 			
-			cout<<"value of buddy address: "<<bud_address<<endl;
+			cout<<"value of buddy address: "<<bud_address<<endl<<endl;
 			//cout<<"value of buddy address: "<<bud_address+sizeof(header)<<endl;
-			cout<<"address of start of buddy block: "<<dec<<bud_address_ptr<<endl;
+			//cout<<"address of start of buddy block: "<<dec<<bud_address_ptr<<endl;
 			cout<<"free status of passed-in block: "<<temp->free<<endl;
 			cout<<"free status of buddy block: "<<bud_address_ptr->free<<endl;
 
 			
 			temp->free = true;//set the temp to free
 			
+			cout<<"~~~~~"<<endl;
+			cout<<"(updated) free status of passed-in block: "<<temp->free<<endl;
+			cout<<"free status of buddy block: "<<bud_address_ptr->free<<endl;
+			//cout<<"~~~~~"<<endl;
 			header* tempR;
 			header* tempL;
 			
@@ -487,7 +500,10 @@ extern int my_free(Addr _a) {
 				tempR = (header*) my_temp;
 				
 			}
-			
+			//cout<<"~~~~~"<<endl;
+			cout<<"free status of left block: "<<tempL->free<<endl;
+			cout<<"free status of right block: "<<tempR->free<<endl;
+			cout<<"~~~~~"<<endl;
 			
 			
 			if(tempL->free == true && tempR->free == true){
@@ -498,12 +514,46 @@ extern int my_free(Addr _a) {
 				tempL->next = free_list[temp_val+1+i];
 				free_list[temp_val+1+i]=tempL;//put the released merged memory blocks back into the freelist
 				//bitFlip(free_list[temp_val+1+i]);//update the offset of the next block index (bitFlip does this automatically in the function), we are not actually flipping any bits 
+				cout<<"left block: "<<my_temp<<endl;
+				cout<<"left block: "<<tempL<<endl;
+				cout<<"right block: "<<tempR<<endl;
+				unsigned long long foo = (unsigned long long) free_list[temp_val+i];
+				cout<<"free_list["<<temp_val+i<<"]"<<endl;
+				cout<<"next in free list: "<<foo<<endl;
 				cout<<"next in free list: "<<free_list[temp_val+i]->next<<endl;
-				for(int j=0;j<2;j++){//flush out the two headers from their previous index 
-					if(free_list[temp_val+i] != 0){
-						free_list[temp_val+i] = free_list[temp_val+i]->next;
+				memset(tempR, 0,tempR->size);
+				
+				bool done = false;
+				header* current = free_list[temp_val+i];
+				
+				/* 
+				while(!done){
+					if(current != 0){
+						if(current->next == tempL || current->next == tempR){
+							cout<<"flushing: "<< (unsigned long long)current->next<<endl;
+							
+						}
 					}
 				}
+				 */
+				//this might not work if we start freeing all willy-nilly
+				for(int j=0;j<2;j++){//flush out the two headers from their previous index 
+					if(free_list[temp_val+i] != 0){
+						cout<<"flushing: "<< (unsigned long long)free_list[temp_val+i]<<endl;
+						
+						free_list[temp_val+i] = free_list[temp_val+i]->next;
+						
+						if(free_list[temp_val+i] != 0){
+							if(free_list[temp_val+i]->size != block_size){
+								cout<<"flushing: "<< (unsigned long long)free_list[temp_val+i]<<endl;
+								free_list[temp_val+i] = free_list[temp_val+i]->next;
+							}
+						}		
+					}	
+					
+				}
+				 
+				cout<<(unsigned long long)free_list[temp_val+i]<<endl;
 			}
 			
 			else if(tempL->free == false || tempR->free == false){//case where left or right buddy is not free
@@ -638,7 +688,7 @@ int main()
 	
 	
 	
-	init_allocator(8,128);
+	init_allocator(8,256);
 
 	cout<<"Print List:"<<endl;
 	PrintList();
@@ -652,24 +702,27 @@ int main()
 	// cout<<"memoryy address: "<<memory<<endl;
 	
 	unsigned long long * block1 = (unsigned long long*) my_malloc(12);
-	cout<<"block1: "<<block1<<endl;
+	//cout<<"block1: "<<block1<<endl;
 	cout<<"second my malloc==========="<<endl;
 	int* block2 = (int*) my_malloc(12);
-	cout<<"block2: "<<block2<<endl;
-	unsigned long long block1_int = (unsigned long long) block1;
-	unsigned long long block2_int = (unsigned long long) block2;
-	cout<<"second allocated block: "<<block2_int<<endl;
-	cout<<"first allocated block: "<<block1_int<<endl<<endl;
+	int* block3 = (int*) my_malloc(12);
+	int* block4 = (int*) my_malloc(12);
+	int* block5 = (int*) my_malloc(12);
+	//cout<<"block2: "<<block2<<endl;
+	//unsigned long long block1_int = (unsigned long long) block1;
+	//unsigned long long block2_int = (unsigned long long) block2;
+	//cout<<"second allocated block: "<<block2_int<<endl;
+	//cout<<"first allocated block: "<<block1_int<<endl<<endl;
 	
 	//cout<<"adjusted second allocated block: "<<block2_int - sizeof(header)<<endl;
 	//cout<<"adjusted first allocated block: "<<block1_int - sizeof(header)<<endl<<endl;
-	cout<<"size of header: "<<sizeof(header)<<endl;
-	cout<<"block1: "<<block1<<endl;
-	cout<<"block2: "<<block2<<endl;
+	//cout<<"size of header: "<<sizeof(header)<<endl;
+	//cout<<"block1: "<<block1<<endl;
+	//cout<<"block2: "<<block2<<endl;
 	int* size_header = (int*) sizeof(header);
 	//block1 = block1 - sizeof(header);
-	cout<<"block1 - header: "<<block1 - 17<<endl;
-	cout<<"block2 - header: "<<block2 - sizeof(header)<<endl;
+	//cout<<"block1 - header: "<<block1 - 17<<endl;
+	//cout<<"block2 - header: "<<block2 - sizeof(header)<<endl;
 	
 	cout<<"========================="<<endl;
 	cout<<"print list after mallocs:"<<endl;
