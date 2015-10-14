@@ -92,7 +92,7 @@ void remove_flist(header* target, int index){
 	
 	header* current = free_list[index];
 	if(current == NULL) return;
-	if(current == target) free_list[index] = free_list[index]->next;
+	if(current == target) { free_list[index] = free_list[index]->next; return; }
 	while(current != NULL){
 		
 		if(current->next == NULL) return;
